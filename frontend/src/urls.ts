@@ -1,1 +1,2 @@
-export const baseUrl = "https://email-otp-assignment.onrender.com";
+export const baseUrl = "http://localhost:8000";
+// https://email-otp-assignment.onrender.com

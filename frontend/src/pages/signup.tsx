@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SignUp from "../assets/signup.png";
 import TextField from "@mui/material/TextField";
@@ -17,16 +17,17 @@ import { baseUrl } from "../urls";
 function Signup() {
   const navigate = useNavigate();
 
-  const [user, setUser] = React.useState({
+  const [user, setUser] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     rePassword: "",
   });
-  const [showPassword, setShowPassword] = React.useState(false);
-  const [showRePassword, setShowRePassword] = React.useState(false);
-  const [contact, setContact] = React.useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRePassword, setShowRePassword] = useState(false);
+  const [contact, setContact] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleUserChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -68,24 +69,38 @@ function Signup() {
       !rePassword ||
       password !== rePassword
     ) {
-      return alert("Please fill in all the fields");
+      alert("Please fill in all the fields");
+      return;
     }
+    try {
+      setLoading(true);
+      const response = await fetch(`${baseUrl}/api/v1/users/verify`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, firstName, lastName, password }),
+      });
 
-    const response = await fetch(`${baseUrl}/api/v1/users/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(user),
-    });
-    if (!response.ok) {
-      const data = await response.json();
-      if (data.error) {
-        return alert("Registration failed");
+      if (response.status === 200) {
+        // Handle success
+        alert("OTP sent to your email");
+        navigate("/verify", {
+          state: { email, firstName, lastName, password },
+        });
+      } else {
+        // Handle other status codes (e.g., 400 Bad Request)
+        const errorText = await response.text();
+        console.error("Error sending OTP:", errorText);
+        alert("Failed to send OTP. Please try again.");
       }
+    } catch (error) {
+      // Handle network errors or other exceptions
+      console.error("Error sending OTP:", error);
+      alert("Failed to send OTP. Please try again.");
+    } finally {
+      setLoading(false);
     }
-    alert("User registered");
-    navigate("/verify", { state: { email } })
   };
 
   return (
@@ -96,7 +111,12 @@ function Signup() {
         alt="signin"
         style={{ width: "740px" }}
       />
-      <form className="flex flex-col gap-4 border rounded-2xl mt-7 md:mt-0 lg:mt-0 px-10 py-5">
+      <form
+        onSubmit={(e) => {
+          handleSignUp(e);
+        }}
+        className="flex flex-col gap-4 border rounded-2xl mt-7 md:mt-0 lg:mt-0 px-10 py-5"
+      >
         <div className="flex items-center gap-10">
           <h1 className="text-dark text-4xl font-extrabold">
             Let us know <span className="text-red">!</span>
@@ -119,7 +139,7 @@ function Signup() {
         />
         <TextField
           sx={{ m: 1, width: "100%" }}
-          id="standard-basic"
+          id="standard-basic2"
           label="Last Name"
           variant="standard"
           name="lastName"
@@ -154,7 +174,7 @@ function Signup() {
             Retype Password
           </InputLabel>
           <Input
-            id="standard-adornment-password"
+            id="standard-adornment-password2"
             type={showRePassword ? "text" : "password"}
             name="rePassword"
             value={user.rePassword}
@@ -191,7 +211,7 @@ function Signup() {
         </FormControl>
         <TextField
           sx={{ m: 1, width: "100%" }}
-          id="standard-basic"
+          id="standard-basic3"
           label="Email"
           variant="standard"
           name="email"
@@ -199,17 +219,16 @@ function Signup() {
           onChange={handleUserChange}
         />
         <button
-          className="border-2 py-4 rounded-3xl text-md font-bold bg-dark text-white"
           type="submit"
-          onClick={(e: React.FormEvent) => {
-            handleSignUp(e);
-          }}
+          className="border-2 py-4 rounded-3xl text-md font-bold bg-dark text-white"
+          disabled={loading}
         >
-          Sign Up
+          {loading ? "Signing Up..." : "Sign Up"}
         </button>
       </form>
     </div>
   );
+  
 }
 
 export default Signup;
