@@ -36,6 +36,11 @@ function Signin() {
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
+    const { email, password } = user;
+    if (email === "" || password === "") {
+      alert("Please fill in all the fields");
+      return;
+    }
     e.preventDefault();
     const response = await fetch(`${baseUrl}/api/v1/users/login`, {
       method: "POST",
